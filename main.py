@@ -1,21 +1,26 @@
-import discord
 import random
 import json
 from discord.ext import commands, tasks
 from itertools  import cycle
+import requests
+import os
+import discord
 
-status = cycle(["Uno", "TLOU 2", "Shark Doooo"])
+
+description = ''' Help command Discription '''
+intents = discord.Intents.all()
+intents.members = True
+
+bot = commands.Bot(command_prefix=".",                   description=description,intents=intents)  # discord bot initialization
+
 def get_prefix(client, message):
   with open('prefixes.json','r') as f:
     prefixes = json.load(f)
   return prefixes[str(message.guild.id)]
 
-client = commands.Bot(command_prefix= get_prefix)
 
-def is_me(m):
-    return m.author == client.user
 
-@client.event
+@bot.event
 async def on_guild_join(guild):
   with open('prefixes.json','r') as f:
     prefixes = json.load(f)
@@ -25,7 +30,7 @@ async def on_guild_join(guild):
   with open('prefixes.json','w') as f:
     json.dump(prefixes, f, indent=4)
 
-@client.event
+@bot.event
 async def on_guild_remove(guild):
   with open('prefixes.json','r') as f:
     prefixes = json.load(f)
@@ -34,30 +39,33 @@ async def on_guild_remove(guild):
 
   with open('prefixes.json','w') as f:
     json.dump(prefixes, f, indent=4)
-    
-@client.event
+
+status = cycle(["Uno", "TLOU 2", "Shark Doooo"])
+
+
+@bot.event
 async def on_ready():
   change_status.start()
-  await client.change_presence(status = discord.Status.idle)
+  await bot.change_presence(status = discord.Status.idle)
   print("Bot is ready")
-
+  
 @tasks.loop(seconds = 10)
 async def change_status():
-  await client.change_presence(activity = discord.Game(next(status)))
+  await bot.change_presence(activity = discord.Game(next(status)))
 
-@client.event
+@bot.event
 async def on_member_join(member):
   print(f"{member} has joined the server.")
 
-@client.event 
+@bot.event 
 async def on_member_remove(member):
   print(f"{member} has left the server.")
 
-@client.command()
+@bot.command()
 async def smash(ctx):
-  await ctx.send(f"You are my senpai and I will serve you UwU! I will be at your home in {round(client.latency*1000)} milliseconds")
+  await ctx.send(f"You are my senpai and I will serve you UwU! I will be at your home in {round(bot.latency*1000)} milliseconds")
 
-@client.command(aliases = ["senpai","test"])
+@bot.command(aliases = ["senpai","test"])
 async def Senpai(ctx, *, question):
   responses = ["It is certain.",
   "It is decidedly so.",
@@ -82,26 +90,29 @@ async def Senpai(ctx, *, question):
 
   await ctx.send(f"Answer= {random.choice(responses)}")
 
-@client.command()
+@bot.command()  
 async def kick(ctx, member:discord.Member, *, reason = None):
   await member.kick(reason = reason)
 
-@client.command()
+@bot.command()
 async def ban(ctx, member:discord.Member, *, reason = None):
   await member.ban(reason = reason)
   await ctx.send(f"Banned {member.mention}")
 
-@client.event
+@bot.event
 async def on_command_error(ctx, error):
   if isinstance(error, commands.CommandNotFound):
     await ctx.send("Invaild command.")
 
-@client.command()
+def is_me(m):
+    return m.author == bot.user
+  
+@bot.command()
 @commands.check(is_me)
 async def example(ctx):
   await ctx.send(f"Hi I'm {ctx.author}")
 
-@client.command()
+@bot.command()
 @commands.has_permissions(manage_messages = True)
 async def clear(ctx, amount: int):
   await ctx.channel.purge(limit=amount+1)
@@ -111,7 +122,7 @@ async def clear_error(ctx, error):
   if isinstance(error, commands.MissingRequiredArgument):
     await ctx.send("Please specify the amount of messages you want to delete.")
 
-@client.command()
+@bot.command()
 async def unban(ctx, *, member):
   banned_user = await ctx.guild.bans()
   member_name, member_discriminator = member.split("#")
@@ -123,4 +134,5 @@ async def unban(ctx, *, member):
       await ctx.send(f"Unbanned {user.mention}. Welcome back")
       return
       
-# client.run("secret, can't tell you. Sorry!")
+#check token
+bot.run('SECRET') 
